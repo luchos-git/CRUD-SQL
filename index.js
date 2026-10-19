@@ -17,17 +17,50 @@ app.get('/', (req, res) => {
 
 
 
-app.get('/personas', (req, res) => {
-  res.send('Lista de personas');
+app.get('/personas', async (req, res) => {
+  // res.send('Lista de personas');
+  
+  const sql = 'SELECT * FROM personas';
+  try{
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(sql);
+    connection.release();
+    res.json(rows);
+  }catch(error){
+    res.status(500).send('Error, no se pudo realizar la consulta');
+  }
+  
 });
 
-app.get('/personas/:id', (req, res) => {
-  res.send(`Persona con id: ${req.params.id}`);
+app.get('/personas/:id', async (req, res) => {
+   const id = parseInt(req.params.id);
+  const sql = 'SELECT * FROM personas WHERE id = ?';
+  try{
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(sql, [id]);
+    connection.release();
+    rows[0] ? res.json(rows[0]) : res.status(404).send('No hay resultados');
+  }catch(error){
+    res.status(500).send('Error, no se pudo realizar la consulta');
+  }
 });
 
-app.put('/personas/:id', (req, res) => {
-  res.send(`Actualizar persona con id: ${req.params.id}`);
-});
+app.put('/personas/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const valores = req.body;
+  const sql = 'UPDATE personas SET ? WHERE id = ?';
+  try {
+  const connection = await pool.getConnection();
+  const [rows] = await connection.query(sql, [valores, id]);
+  connection.release();
+  rows.affectedRows == 0 ? res.send('Persona no encontrada') : res.status(200).send('Persona actualizada exitosamente');
+
+  }catch (error) {
+    res.status(500).send('Error al actualizar persona');
+  }
+})
+
+
 
 //nuevo registro
 app.post('/personas', async(req, res) => {
@@ -47,8 +80,18 @@ app.post('/personas', async(req, res) => {
   res.send('Crear persona');
 });
 
-app.delete('/personas/:id', (req, res) => {
-  res.send(`Eliminar persona con id: ${req.params.id}`);
+app.delete('/personas/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const sql = 'DELETE FROM personas WHERE id = ?';
+
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(sql, [id]);
+    connection.release();
+    rows.affectedRows == 0 ? res.send('Persona no encontrada') : res.status(200).send();
+  } catch (error) {
+    res.status(500).send('Error al eliminar persona');
+  }
 });
 
 
@@ -63,4 +106,5 @@ app.listen(PORT, () => {
 });
 
 
-
+//npm run dev = agrega nodemon para actualizar el codigo automaticamente
+//npm run start = inicia sin actualizar nuevo codigo
